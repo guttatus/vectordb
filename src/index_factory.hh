@@ -15,7 +15,7 @@ public:
   };
 
   ~IndexFactory();
-  void init(IndexType type, int dim, MetricType metric = MetricType::L2);
+  void init(IndexType type, i32 dim, MetricType metric = MetricType::L2);
   FaissIndex *getIndex(IndexType type) const;
 
 private:
@@ -43,7 +43,7 @@ template <> struct std::formatter<IndexFactory::IndexType> {
   // 格式化函数
   auto format(IndexFactory::IndexType index, std::format_context &ctx) const {
     if (specifier == 'd') {
-      return std::format_to(ctx.out(), "{}", static_cast<int>(index));
+      return std::format_to(ctx.out(), "{}", static_cast<i32>(index));
     }
 
     // 默认字符串输出

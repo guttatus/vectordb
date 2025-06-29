@@ -20,7 +20,7 @@ IndexFactory::~IndexFactory() {
   }
 }
 
-void IndexFactory::init(IndexType type, int dim, MetricType metric) {
+void IndexFactory::init(IndexType type, i32 dim, MetricType metric) {
   faiss::MetricType faiss_metric = (metric == MetricType::L2)
                                        ? faiss::METRIC_L2
                                        : faiss::METRIC_INNER_PRODUCT;

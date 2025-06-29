@@ -12,6 +12,7 @@ public:
   ~FaissIndex();
   FaissIndex(faiss::Index *index);
   void insert_vectors(const std::vector<f32> &data, u64 label);
+  void remove_vectors(const std::vector<i64> &ids);
   std::pair<std::vector<i64>, std::vector<f32>>
   search_vectors(const std::vector<f32> &query, i32 k);
 

@@ -16,7 +16,11 @@ int main(int argc, char **argv) {
   globalIndexFactory->init(IndexFactory::IndexType::HNSW, dim);
   GlobalLogger->info("Global IndexFactory initialized");
 
-  HttpServer server("localhost", 8080);
+  std::string db_path = "VectorDB";
+  VectorDB vector_db(db_path);
+  GlobalLogger->info("VectorDB initialized");
+
+  HttpServer server("localhost", 8080, &vector_db);
   GlobalLogger->info("HttpServer Start");
   server.start();
   return 0;
