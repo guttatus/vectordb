@@ -266,7 +266,7 @@ void HttpServer::queryHandler(const httplib::Request &req,
   if (!json_query_data.IsNull()) {
     for (auto it = json_query_data.MemberBegin();
          it != json_query_data.MemberEnd(); ++it) {
-      json_request.AddMember(it->name, it->value, allocator);
+      json_response.AddMember(it->name, it->value, allocator);
     }
   }
 
@@ -313,9 +313,9 @@ bool HttpServer::isRequestValid(const rapidjson::Document &json_request,
            (!json_request.HasMember(REQUEST_INDEX_TYPE) ||
             json_request[REQUEST_INDEX_TYPE].IsString());
   case CheckType::QQUERY:
-    json_request.HasMember(REQUEST_ID) &&
-        (!json_request.HasMember(REQUEST_INDEX_TYPE) ||
-         json_request[REQUEST_INDEX_TYPE].IsString());
+    return json_request.HasMember(REQUEST_ID) &&
+           (!json_request.HasMember(REQUEST_INDEX_TYPE) ||
+            json_request[REQUEST_INDEX_TYPE].IsString());
   default:
     return false;
   }

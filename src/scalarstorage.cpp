@@ -37,6 +37,7 @@ rapidjson::Document ScalarStorage::get_scalar(u64 id) {
       m_db->Get(rocksdb::ReadOptions(), std::to_string(id), &value);
 
   if (!status.ok()) {
+    GlobalLogger->error("No item with id {} in RocksDB", id);
     return rapidjson::Document();
   }
 

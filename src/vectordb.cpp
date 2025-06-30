@@ -28,19 +28,20 @@ void VectorDB::upsert(u64 id, const rapidjson::Document &data,
     if (index) {
       index->remove_vectors({static_cast<i64>(id)});
     }
-
-    size_t new_vectors_size = data[REQUEST_VECTORS].Size();
-    std::vector<f32> new_vector(new_vectors_size);
-    for (rapidjson::SizeType i = 0; i < new_vectors_size; ++i) {
-      new_vector[i] = data[REQUEST_VECTORS][i].GetFloat();
-    }
-
-    if (index) {
-      index->insert_vectors(new_vector, id);
-    }
-
-    m_scalar_storage.insert_scalar(id, data);
   }
+
+  size_t new_vectors_size = data[REQUEST_VECTORS].Size();
+  std::vector<f32> new_vector(new_vectors_size);
+  for (rapidjson::SizeType i = 0; i < new_vectors_size; ++i) {
+    new_vector[i] = data[REQUEST_VECTORS][i].GetFloat();
+  }
+
+  FaissIndex *index = getGlobalIndexFactory()->getIndex(index_type);
+  if (index) {
+    index->insert_vectors(new_vector, id);
+  }
+
+  m_scalar_storage.insert_scalar(id, data);
 }
 
 rapidjson::Document VectorDB::query(u64 id) {
