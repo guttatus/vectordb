@@ -19,7 +19,9 @@ int main(int argc, char **argv)
     GlobalLogger->info("Global IndexFactory initialized");
 
     std::string db_path = "VectorDB";
-    VectorDB vector_db(db_path);
+    std::string wal_path = "WALStorage";
+    VectorDB vector_db(db_path, wal_path);
+    vector_db.reloadDataBase();
     GlobalLogger->info("VectorDB initialized");
 
     HttpServer server("localhost", 8080, &vector_db);

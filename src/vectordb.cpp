@@ -1,4 +1,12 @@
 #include "vectordb.hh"
+#include "constants.hh"
+#include "faiss_index.hh"
+#include "filter_index.hh"
+#include "index_factory.hh"
+#include "logger.hh"
+#include "rapidjson/document.h"
+#include "rapidjson/stringbuffer.h"
+#include "rapidjson/writer.h"
 
 #include <cstdlib>
 #include <stdexcept>
@@ -6,17 +14,12 @@
 #include <utility>
 #include <vector>
 
-#include "constants.hh"
-#include "faiss_index.hh"
-#include "filter_index.hh"
-#include "index_factory.hh"
-#include "logger.hh"
-
 namespace vdb
 {
 
-VectorDB::VectorDB(const std::string &db_path) : m_scalar_storage(db_path)
+VectorDB::VectorDB(const std::string &db_path, const std::string &wal_path) : m_scalar_storage(db_path), m_persistence()
 {
+    m_persistence.init(wal_path);
 }
 
 void VectorDB::upsert(u64 id, const rapidjson::Document &data, IndexFactory::IndexType index_type)
@@ -146,6 +149,41 @@ std::pair<std::vector<i64>, std::vector<f32>> VectorDB::search(const rapidjson::
         delete filter_bitmap;
     }
     return results;
+}
+
+void VectorDB::writeWALLog(const std::string &operation_type, const rapidjson::Document &json_data)
+{
+    std::string version = "1.0";
+    m_persistence.writeWALLog(operation_type, json_data, version);
+}
+
+void VectorDB::reloadDataBase()
+{
+    GlobalLogger->info("Entering VectorDB::reloadDataBase()");
+    std::string operator_type;
+    rapidjson::Document json_data;
+    m_persistence.readNextWALLog(&operator_type, &json_data);
+
+    while (!operator_type.empty())
+    {
+        GlobalLogger->debug("Operation Type: {}", operator_type);
+
+        rapidjson::StringBuffer buffer;
+        rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
+        json_data.Accept(writer);
+        GlobalLogger->info("Read Line: {}", buffer.GetString());
+
+        if (operator_type == "upsert")
+        {
+            u64 id = json_data[REQUEST_ID].GetUint64();
+            IndexFactory::IndexType index_type = getIndexTypeFromJson(json_data);
+            upsert(id, json_data, index_type);
+        }
+
+        rapidjson::Document().Swap(json_data);
+        operator_type.clear();
+        m_persistence.readNextWALLog(&operator_type, &json_data);
+    }
 }
 
 } // namespace vdb

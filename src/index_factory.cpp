@@ -1,4 +1,5 @@
 #include "index_factory.hh"
+#include "constants.hh"
 #include "logger.hh"
 #include <faiss/IndexFlat.h>
 #include <faiss/IndexHNSW.h>
@@ -102,6 +103,23 @@ FilterIndex *IndexFactory::getFilterIndex() const
         return static_cast<FilterIndex *>(it->second);
     }
     return nullptr;
+}
+
+IndexFactory::IndexType getIndexTypeFromJson(const rapidjson::Document &json_data)
+{
+    if (json_data.HasMember(REQUEST_INDEX_TYPE))
+    {
+        std::string index_type_str = json_data[REQUEST_INDEX_TYPE].GetString();
+        if (index_type_str == "FLAT")
+        {
+            return IndexFactory::IndexType::FLAT;
+        }
+        if (index_type_str == "HNSW")
+        {
+            return IndexFactory::IndexType::HNSW;
+        }
+    }
+    return IndexFactory::IndexType::UNKNOWN;
 }
 
 } // namespace vdb

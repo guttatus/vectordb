@@ -4,6 +4,7 @@
 #include "filter_index.hh"
 #include <format>
 #include <map>
+#include <rapidjson/document.h>
 
 namespace vdb
 {
@@ -35,6 +36,7 @@ class IndexFactory
 };
 
 IndexFactory *getGlobalIndexFactory();
+IndexFactory::IndexType getIndexTypeFromJson(const rapidjson::Document &json_data);
 
 } // namespace vdb
 

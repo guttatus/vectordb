@@ -1,6 +1,5 @@
 #pragma once
 
-#include "index_factory.hh"
 #include "vectordb.hh"
 #include <httplib.h>
 #include <rapidjson/document.h>
@@ -31,8 +30,7 @@ class HttpServer
     void setErrorJsonResponse(httplib::Response &res, i32 error_code, const std::string &error_msg);
     bool isRequestValid(const rapidjson::Document &json_request, CheckType check_type);
 
-    IndexFactory::IndexType getIndexTypeFromRequset(const rapidjson::Document &json_request);
-
+  private:
     httplib::Server m_server;
     std::string m_host;
     i32 m_port;

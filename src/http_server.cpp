@@ -64,7 +64,7 @@ void HttpServer::searchHandler(const httplib::Request &req, httplib::Response &r
 
     GlobalLogger->debug("Query parameters: k = {}", k);
 
-    IndexFactory::IndexType index_type = getIndexTypeFromRequset(json_request);
+    IndexFactory::IndexType index_type = getIndexTypeFromJson(json_request);
     if (index_type == IndexFactory::IndexType::UNKNOWN)
     {
         GlobalLogger->error("Invalid index type parameter in the request");
@@ -148,7 +148,7 @@ void HttpServer::insertHandler(const httplib::Request &req, httplib::Response &r
 
     GlobalLogger->debug("Insert parameters: label = {}", label);
 
-    IndexFactory::IndexType index_type = getIndexTypeFromRequset(json_request);
+    IndexFactory::IndexType index_type = getIndexTypeFromJson(json_request);
     if (index_type == IndexFactory::IndexType::UNKNOWN)
     {
         GlobalLogger->error("Invalid index type parameter in the request");
@@ -207,7 +207,7 @@ void HttpServer::upsertHandler(const httplib::Request &req, httplib::Response &r
 
     GlobalLogger->debug("Upsert parameters: id = {}", label);
 
-    IndexFactory::IndexType index_type = getIndexTypeFromRequset(json_request);
+    IndexFactory::IndexType index_type = getIndexTypeFromJson(json_request);
     if (index_type == IndexFactory::IndexType::UNKNOWN)
     {
         GlobalLogger->error("Invalid index type parameter in the request");
@@ -216,6 +216,9 @@ void HttpServer::upsertHandler(const httplib::Request &req, httplib::Response &r
         return;
     }
 
+    // write log before upsert database
+    m_vector_db->writeWALLog("upsert", json_request);
+    // upsert database
     m_vector_db->upsert(label, json_request, index_type);
 
     // 将结果转换为JSON格式
@@ -312,20 +315,4 @@ bool HttpServer::isRequestValid(const rapidjson::Document &json_request, CheckTy
     }
 }
 
-IndexFactory::IndexType HttpServer::getIndexTypeFromRequset(const rapidjson::Document &json_request)
-{
-    if (json_request.HasMember(REQUEST_INDEX_TYPE))
-    {
-        std::string index_type_str = json_request[REQUEST_INDEX_TYPE].GetString();
-        if (index_type_str == "FLAT")
-        {
-            return IndexFactory::IndexType::FLAT;
-        }
-        if (index_type_str == "HNSW")
-        {
-            return IndexFactory::IndexType::HNSW;
-        }
-    }
-    return IndexFactory::IndexType::UNKNOWN;
-}
 } // namespace vdb
