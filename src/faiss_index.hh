@@ -1,23 +1,45 @@
 #pragma once
 
+#include "faiss/impl/IDSelector.h"
 #include "types.hh"
 #include <faiss/Index.h>
+#include <roaring/roaring.h>
 #include <utility>
 #include <vector>
 
-namespace vdb {
+namespace vdb
+{
 
-class FaissIndex {
-public:
-  ~FaissIndex();
-  FaissIndex(faiss::Index *index);
-  void insert_vectors(const std::vector<f32> &data, u64 label);
-  void remove_vectors(const std::vector<i64> &ids);
-  std::pair<std::vector<i64>, std::vector<f32>>
-  search_vectors(const std::vector<f32> &query, i32 k);
+struct RoaringBitmapIDSelector : faiss::IDSelector
+{
+    RoaringBitmapIDSelector(const roaring_bitmap_t *bitmap) : m_bitmap(bitmap)
+    {
+    }
 
-private:
-  faiss::Index *m_index;
+    bool is_member(i64 id) const final;
+    ~RoaringBitmapIDSelector() override
+    {
+    }
+
+    const roaring_bitmap_t *m_bitmap;
+};
+
+class FaissIndex
+{
+  public:
+    FaissIndex(faiss::Index *index);
+    ~FaissIndex();
+
+    void insert_vectors(const std::vector<f32> &data, u64 label);
+
+    void remove_vectors(const std::vector<i64> &ids);
+
+    std::pair<std::vector<i64>, std::vector<f32>>
+
+    search_vectors(const std::vector<f32> &query, i32 k, const roaring_bitmap_t *bitmap = nullptr);
+
+  private:
+    faiss::Index *m_index;
 };
 
 } // namespace vdb
