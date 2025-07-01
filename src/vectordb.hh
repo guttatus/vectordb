@@ -25,6 +25,9 @@ class VectorDB
     void writeWALLog(const std::string &operation_type, const rapidjson::Document &json_data);
     void reloadDataBase();
 
+    /// Snapshot
+    void takeSnapshot();
+
   private:
     ScalarStorage m_scalar_storage;
     Persistence m_persistence;

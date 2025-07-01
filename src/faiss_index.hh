@@ -30,13 +30,17 @@ class FaissIndex
     FaissIndex(faiss::Index *index);
     ~FaissIndex();
 
+    /// modify
     void insert_vectors(const std::vector<f32> &data, u64 label);
-
     void remove_vectors(const std::vector<i64> &ids);
 
-    std::pair<std::vector<i64>, std::vector<f32>>
+    /// observe
+    std::pair<std::vector<i64>, std::vector<f32>> search_vectors(const std::vector<f32> &query, i32 k,
+                                                                 const roaring_bitmap_t *bitmap = nullptr);
 
-    search_vectors(const std::vector<f32> &query, i32 k, const roaring_bitmap_t *bitmap = nullptr);
+    /// Snapshot
+    void saveIndex(const std::string &file_path);
+    void loadIndex(const std::string &file_path);
 
   private:
     faiss::Index *m_index;

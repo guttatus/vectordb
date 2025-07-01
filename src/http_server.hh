@@ -26,6 +26,7 @@ class HttpServer
     void insertHandler(const httplib::Request &req, httplib::Response &res);
     void upsertHandler(const httplib::Request &req, httplib::Response &res);
     void queryHandler(const httplib::Request &req, httplib::Response &res);
+    void snapshotHandler(const httplib::Request &req, httplib::Response &res);
     void setJsonResponse(const rapidjson::Document &json_response, httplib::Response &res);
     void setErrorJsonResponse(httplib::Response &res, i32 error_code, const std::string &error_msg);
     bool isRequestValid(const rapidjson::Document &json_request, CheckType check_type);

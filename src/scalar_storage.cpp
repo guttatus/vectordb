@@ -16,7 +16,7 @@ ScalarStorage::ScalarStorage(const std::string &db_path)
     rocksdb::Status status = rocksdb::DB::Open(options, db_path, &m_db);
     if (!status.ok())
     {
-        throw std::runtime_error("Failed to open RocksDB: " + status.ToString());
+        throw std::runtime_error("<RocksDB> Failed to open RocksDB: " + status.ToString());
     }
 }
 
@@ -34,7 +34,7 @@ void ScalarStorage::insert_scalar(u64 id, const rapidjson::Document &data)
     rocksdb::Status status = m_db->Put(rocksdb::WriteOptions(), std::to_string(id), value);
     if (!status.ok())
     {
-        GlobalLogger->error("Failed to insert scalar: {}", status.ToString());
+        GlobalLogger->error("<RocksDB> Failed to insert scalar: {}", status.ToString());
     }
 }
 
@@ -45,7 +45,7 @@ rapidjson::Document ScalarStorage::get_scalar(u64 id)
 
     if (!status.ok())
     {
-        GlobalLogger->error("No item with id {} in RocksDB", id);
+        GlobalLogger->error("<RocksDB> No item with id {}", id);
         return rapidjson::Document();
     }
 
@@ -55,9 +55,30 @@ rapidjson::Document ScalarStorage::get_scalar(u64 id)
     rapidjson::StringBuffer buffer;
     rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
     data.Accept(writer);
-    GlobalLogger->debug("Data retrieved from ScalarStorage: {}, RocksDB status: {}", buffer.GetString(),
-                        status.ToString());
+    GlobalLogger->debug("<RocksDB> Data retrieved from ScalarStorage: {} : {}", buffer.GetString(), status.ToString());
     return data;
+}
+
+void ScalarStorage::put(const std::string &key, const std::string &value)
+{
+    rocksdb::Status status = m_db->Put(rocksdb::WriteOptions(), key, value);
+    if (!status.ok())
+    {
+        GlobalLogger->error("<RocksDB> Failed to put key {} : {}", key, status.ToString());
+    }
+    return;
+}
+
+std::string ScalarStorage::get(const std::string &key)
+{
+    std::string value;
+    rocksdb::Status status = m_db->Get(rocksdb::ReadOptions(), key, &value);
+    if (!status.ok())
+    {
+        GlobalLogger->error("<RocksDB> Failed to get value for key {} : {}", key, status.ToString());
+        return "";
+    }
+    return value;
 }
 
 } // namespace vdb

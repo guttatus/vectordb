@@ -57,14 +57,14 @@ void VectorDB::upsert(u64 id, const rapidjson::Document &data, IndexFactory::Ind
         new_vector[i] = data[REQUEST_VECTORS][i].GetFloat();
     }
 
-    GlobalLogger->debug("Add new id={} to index", id);
+    GlobalLogger->debug("<VectorDB> Add new id={} to index", id);
     FaissIndex *index = getGlobalIndexFactory()->getFaissIndex(index_type);
     if (index)
     {
         index->insert_vectors(new_vector, id);
     }
 
-    GlobalLogger->debug("Try to add new filter");
+    GlobalLogger->debug("<VectorDB> Try to add new filter");
     FilterIndex *filter_index = getGlobalIndexFactory()->getFilterIndex();
     if (filter_index)
     {
@@ -159,19 +159,20 @@ void VectorDB::writeWALLog(const std::string &operation_type, const rapidjson::D
 
 void VectorDB::reloadDataBase()
 {
-    GlobalLogger->info("Entering VectorDB::reloadDataBase()");
+    GlobalLogger->info("<VectorDB> Entering VectorDB::reloadDataBase()");
+    m_persistence.loadSnapshot(m_scalar_storage);
     std::string operator_type;
     rapidjson::Document json_data;
     m_persistence.readNextWALLog(&operator_type, &json_data);
 
     while (!operator_type.empty())
     {
-        GlobalLogger->debug("Operation Type: {}", operator_type);
+        GlobalLogger->debug("<VectorDB> Operation Type: {}", operator_type);
 
         rapidjson::StringBuffer buffer;
         rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
         json_data.Accept(writer);
-        GlobalLogger->info("Read Line: {}", buffer.GetString());
+        GlobalLogger->info("<VectorDB> Read Line: {}", buffer.GetString());
 
         if (operator_type == "upsert")
         {
@@ -184,6 +185,11 @@ void VectorDB::reloadDataBase()
         operator_type.clear();
         m_persistence.readNextWALLog(&operator_type, &json_data);
     }
+}
+
+void VectorDB::takeSnapshot()
+{
+    m_persistence.takeSnapshot(m_scalar_storage);
 }
 
 } // namespace vdb

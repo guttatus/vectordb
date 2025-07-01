@@ -27,9 +27,15 @@ class IndexFactory
 
     ~IndexFactory();
     void init(IndexType type, i32 dim, MetricType metric = MetricType::L2);
+
+    /// observe
     void *getIndex(IndexType type) const;
     FaissIndex *getFaissIndex(IndexType type) const;
     FilterIndex *getFilterIndex() const;
+
+    /// snapshot
+    void saveIndex(const std::string folder_path, ScalarStorage &scalar_storage);
+    void loadIndex(const std::string folder_path, ScalarStorage &scalar_storage);
 
   private:
     std::map<IndexType, void *> m_index_map;
@@ -78,6 +84,7 @@ template <> struct std::formatter<IndexFactory::IndexType>
             break;
         case IndexFactory::IndexType::FILTER:
             str = "FILTER";
+            break;
         default:
             str = "UNKNOWN";
         }

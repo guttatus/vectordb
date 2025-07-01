@@ -25,6 +25,9 @@ HttpServer::HttpServer(const std::string &host, i32 port, VectorDB *vdb) : m_hos
     m_server.Post("/upsert", [this](const httplib::Request &req, httplib::Response &res) { upsertHandler(req, res); });
 
     m_server.Post("/query", [this](const httplib::Request &req, httplib::Response &res) { queryHandler(req, res); });
+
+    m_server.Post("/admin/snapshot",
+                  [this](const httplib::Request &req, httplib::Response &res) { snapshotHandler(req, res); });
 }
 
 void HttpServer::start()
@@ -34,14 +37,14 @@ void HttpServer::start()
 
 void HttpServer::searchHandler(const httplib::Request &req, httplib::Response &res)
 {
-    GlobalLogger->debug("Received search request");
+    GlobalLogger->debug("<Server> Received search request");
     rapidjson::Document json_request;
     json_request.Parse(req.body.c_str());
-    GlobalLogger->info("Search request parameters: {}", req.body);
+    GlobalLogger->info("<Server> Search request parameters: {}", req.body);
 
     if (!json_request.IsObject())
     {
-        GlobalLogger->error("Invalid json request");
+        GlobalLogger->error("<Server> Invalid json request");
         res.status = 400;
         setErrorJsonResponse(res, RESPONSE_RETCODE_ERROR, "Invalid JSON request");
         return;
@@ -49,7 +52,7 @@ void HttpServer::searchHandler(const httplib::Request &req, httplib::Response &r
 
     if (!isRequestValid(json_request, CheckType::SEARCH))
     {
-        GlobalLogger->error("Missing vectors or k parameter in the request");
+        GlobalLogger->error("<Server> Missing vectors or k parameter in the request");
         res.status = 400;
         setErrorJsonResponse(res, RESPONSE_RETCODE_ERROR, "Missing vectors or k parameter in the request");
         return;
@@ -62,12 +65,12 @@ void HttpServer::searchHandler(const httplib::Request &req, httplib::Response &r
     }
     i32 k = json_request[REQUEST_K].GetInt();
 
-    GlobalLogger->debug("Query parameters: k = {}", k);
+    GlobalLogger->debug("<Server> Query parameters: k = {}", k);
 
     IndexFactory::IndexType index_type = getIndexTypeFromJson(json_request);
     if (index_type == IndexFactory::IndexType::UNKNOWN)
     {
-        GlobalLogger->error("Invalid index type parameter in the request");
+        GlobalLogger->error("<Server> Invalid index type parameter in the request");
         res.status = 400;
         setErrorJsonResponse(res, RESPONSE_RETCODE_ERROR, "Invalid index type parameter in the request");
         return;
@@ -79,7 +82,7 @@ void HttpServer::searchHandler(const httplib::Request &req, httplib::Response &r
     {
         std::string error_msg = std::format("Index type {} is not supported", index_type);
 
-        GlobalLogger->error(error_msg);
+        GlobalLogger->error("<Server>" + error_msg);
         res.status = 400;
         setErrorJsonResponse(res, RESPONSE_RETCODE_ERROR, error_msg);
         return;
@@ -118,14 +121,14 @@ void HttpServer::searchHandler(const httplib::Request &req, httplib::Response &r
 void HttpServer::insertHandler(const httplib::Request &req, httplib::Response &res)
 {
 
-    GlobalLogger->debug("Received insert request");
+    GlobalLogger->debug("<Server> Received insert request");
     rapidjson::Document json_request;
     json_request.Parse(req.body.c_str());
-    GlobalLogger->info("Insert request parameters: {}", req.body);
+    GlobalLogger->info("<Server> Insert request parameters: {}", req.body);
 
     if (!json_request.IsObject())
     {
-        GlobalLogger->error("Invalid json request");
+        GlobalLogger->error("<Server> Invalid json request");
         res.status = 400;
         setErrorJsonResponse(res, RESPONSE_RETCODE_ERROR, "Invalid JSON request");
         return;
@@ -133,7 +136,7 @@ void HttpServer::insertHandler(const httplib::Request &req, httplib::Response &r
 
     if (!isRequestValid(json_request, CheckType::INSERT))
     {
-        GlobalLogger->error("Missing vectors or id parameter in the request");
+        GlobalLogger->error("<Server> Missing vectors or id parameter in the request");
         res.status = 400;
         setErrorJsonResponse(res, RESPONSE_RETCODE_ERROR, "Missing vectors or id parameter in the request");
         return;
@@ -146,12 +149,12 @@ void HttpServer::insertHandler(const httplib::Request &req, httplib::Response &r
     }
     u64 label = json_request[REQUEST_ID].GetUint64();
 
-    GlobalLogger->debug("Insert parameters: label = {}", label);
+    GlobalLogger->debug("<Server> Insert parameters: label = {}", label);
 
     IndexFactory::IndexType index_type = getIndexTypeFromJson(json_request);
     if (index_type == IndexFactory::IndexType::UNKNOWN)
     {
-        GlobalLogger->error("Invalid index type parameter in the request");
+        GlobalLogger->error("<Server> Invalid index type parameter in the request");
         res.status = 400;
         setErrorJsonResponse(res, RESPONSE_RETCODE_ERROR, "Invalid index type parameter in the request");
         return;
@@ -163,7 +166,7 @@ void HttpServer::insertHandler(const httplib::Request &req, httplib::Response &r
     {
         std::string error_msg = std::format("Index type {} is not supported", index_type);
 
-        GlobalLogger->error(error_msg);
+        GlobalLogger->error("<Server>" + error_msg);
         res.status = 400;
         setErrorJsonResponse(res, RESPONSE_RETCODE_ERROR, error_msg);
         return;
@@ -182,14 +185,14 @@ void HttpServer::insertHandler(const httplib::Request &req, httplib::Response &r
 
 void HttpServer::upsertHandler(const httplib::Request &req, httplib::Response &res)
 {
-    GlobalLogger->debug("Received upsert request");
+    GlobalLogger->debug("<Server> Received upsert request");
     rapidjson::Document json_request;
     json_request.Parse(req.body.c_str());
-    GlobalLogger->info("Upsert request parameters: {}", req.body);
+    GlobalLogger->info("<Server> Upsert request parameters: {}", req.body);
 
     if (!json_request.IsObject())
     {
-        GlobalLogger->error("Invalid json request");
+        GlobalLogger->error("<Server> Invalid json request");
         res.status = 400;
         setErrorJsonResponse(res, RESPONSE_RETCODE_ERROR, "Invalid JSON request");
         return;
@@ -197,7 +200,7 @@ void HttpServer::upsertHandler(const httplib::Request &req, httplib::Response &r
 
     if (!isRequestValid(json_request, CheckType::UPSERT))
     {
-        GlobalLogger->error("Missing vectors or id parameter in the request");
+        GlobalLogger->error("<Server> Missing vectors or id parameter in the request");
         res.status = 400;
         setErrorJsonResponse(res, RESPONSE_RETCODE_ERROR, "Missing vectors or id parameter in the request");
         return;
@@ -205,12 +208,12 @@ void HttpServer::upsertHandler(const httplib::Request &req, httplib::Response &r
 
     u64 label = json_request[REQUEST_ID].GetUint64();
 
-    GlobalLogger->debug("Upsert parameters: id = {}", label);
+    GlobalLogger->debug("<Server> Upsert parameters: id = {}", label);
 
     IndexFactory::IndexType index_type = getIndexTypeFromJson(json_request);
     if (index_type == IndexFactory::IndexType::UNKNOWN)
     {
-        GlobalLogger->error("Invalid index type parameter in the request");
+        GlobalLogger->error("<Server> Invalid index type parameter in the request");
         res.status = 400;
         setErrorJsonResponse(res, RESPONSE_RETCODE_ERROR, "Invalid index type parameter in the request");
         return;
@@ -232,14 +235,14 @@ void HttpServer::upsertHandler(const httplib::Request &req, httplib::Response &r
 
 void HttpServer::queryHandler(const httplib::Request &req, httplib::Response &res)
 {
-    GlobalLogger->debug("Received query request");
+    GlobalLogger->debug("<Server> Received query request");
     rapidjson::Document json_request;
     json_request.Parse(req.body.c_str());
-    GlobalLogger->info("Query request parameters: {}", req.body);
+    GlobalLogger->info("<Server> Query request parameters: {}", req.body);
 
     if (!json_request.IsObject())
     {
-        GlobalLogger->error("Invalid json request");
+        GlobalLogger->error("<Server> Invalid json request");
         res.status = 400;
         setErrorJsonResponse(res, RESPONSE_RETCODE_ERROR, "Invalid JSON request");
         return;
@@ -247,7 +250,7 @@ void HttpServer::queryHandler(const httplib::Request &req, httplib::Response &re
 
     if (!isRequestValid(json_request, CheckType::QQUERY))
     {
-        GlobalLogger->error("Missing vectors or id parameter in the request");
+        GlobalLogger->error("<Server> Missing vectors or id parameter in the request");
         res.status = 400;
         setErrorJsonResponse(res, RESPONSE_RETCODE_ERROR, "Missing vectors or id parameter in the request");
         return;
@@ -255,7 +258,7 @@ void HttpServer::queryHandler(const httplib::Request &req, httplib::Response &re
 
     u64 label = json_request[REQUEST_ID].GetUint64();
 
-    GlobalLogger->debug("Query parameters: id = {}", label);
+    GlobalLogger->debug("<Server> Query parameters: id = {}", label);
 
     rapidjson::Document json_query_data = m_vector_db->query(label);
 
@@ -272,6 +275,18 @@ void HttpServer::queryHandler(const httplib::Request &req, httplib::Response &re
         }
     }
 
+    json_response.AddMember(RESPONSE_RETCODE, RESPONSE_RETCODE_SUCCESS, allocator);
+    setJsonResponse(json_response, res);
+}
+
+void HttpServer::snapshotHandler(const httplib::Request &req, httplib::Response &res)
+{
+    GlobalLogger->debug("<Server> Received snap request");
+    m_vector_db->takeSnapshot();
+
+    rapidjson::Document json_response;
+    json_response.SetObject();
+    rapidjson::Document::AllocatorType &allocator = json_response.GetAllocator();
     json_response.AddMember(RESPONSE_RETCODE, RESPONSE_RETCODE_SUCCESS, allocator);
     setJsonResponse(json_response, res);
 }

@@ -1,6 +1,7 @@
 #include "filter_index.hh"
 #include "logger.hh"
 #include <optional>
+#include <sstream>
 
 namespace vdb
 {
@@ -78,6 +79,68 @@ void FilterIndex::getIntFieldFilterBitmap(const std::string &fieldname, Operatio
             GlobalLogger->debug("Retrieved NOT_EQUAL bitmap for fieldname={}, value={}", fieldname, value);
         }
     }
+}
+
+/// Snap
+std::string FilterIndex::serializeIntFiledFilter()
+{
+    std::ostringstream oss;
+    for (const auto &field_entry : m_int_field_filter)
+    {
+        const std::string &field_name = field_entry.first;
+        const auto &value_map = field_entry.second;
+        for (const auto &value_entry : value_map)
+        {
+            i64 value = value_entry.first;
+            const roaring_bitmap_t *bitmap = value_entry.second;
+
+            // serializa bitmap
+            u32 size = roaring_bitmap_portable_size_in_bytes(bitmap);
+            char *serializa_bitmap = new char[size];
+            roaring_bitmap_portable_serialize(bitmap, serializa_bitmap);
+            oss << field_name << "|" << value << "|";
+            oss.write(serializa_bitmap, size);
+            oss << std::endl;
+            delete[] serializa_bitmap;
+        }
+    }
+    return oss.str();
+}
+
+void FilterIndex::deserializeIntFiledFilter(const std::string &serialized_data)
+{
+    std::istringstream iss(serialized_data);
+
+    std::string line;
+    while (std::getline(iss, line))
+    {
+        std::istringstream line_iss(line);
+
+        std::string field_name;
+        std::getline(line_iss, field_name, '|');
+
+        std::string value_str;
+        std::getline(line_iss, value_str, '|');
+        long value = std::stol(value_str);
+
+        std::string serialized_bitmap(std::istreambuf_iterator<char>(line_iss), {});
+
+        roaring_bitmap_t *bitmap = roaring_bitmap_portable_deserialize(serialized_bitmap.data());
+
+        m_int_field_filter[field_name][value] = bitmap;
+    }
+}
+
+void FilterIndex::saveIndex(ScalarStorage &scalar_storage, const std::string &key)
+{
+    std::string serialized_data = serializeIntFiledFilter();
+    scalar_storage.put(key, serialized_data);
+}
+
+void FilterIndex::loadIndex(ScalarStorage &scalar_storage, const std::string &key)
+{
+    std::string serialized_data = scalar_storage.get(key);
+    deserializeIntFiledFilter(serialized_data);
 }
 
 } // namespace vdb

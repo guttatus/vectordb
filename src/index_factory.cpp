@@ -1,5 +1,6 @@
 #include "index_factory.hh"
 #include "constants.hh"
+#include "filter_index.hh"
 #include "logger.hh"
 #include <faiss/IndexFlat.h>
 #include <faiss/IndexHNSW.h>
@@ -48,7 +49,7 @@ void IndexFactory::init(IndexType type, i32 dim, MetricType metric)
     if (index != nullptr)
     {
         std::string error_msg = std::format("Index type {} has already been iniyialized", type);
-        GlobalLogger->error(error_msg);
+        GlobalLogger->error("<IndexFactory>" + error_msg);
         return;
     }
 
@@ -103,6 +104,38 @@ FilterIndex *IndexFactory::getFilterIndex() const
         return static_cast<FilterIndex *>(it->second);
     }
     return nullptr;
+}
+
+void IndexFactory::saveIndex(const std::string folder_path, ScalarStorage &scalar_storage)
+{
+    for (const auto &[index_type, index_ptr] : m_index_map)
+    {
+        std::string file_path = std::format("{}.{}.index", folder_path, index_type);
+        if (index_type == IndexType::FLAT || index_type == IndexType::HNSW)
+        {
+            static_cast<FaissIndex *>(index_ptr)->saveIndex(file_path);
+        }
+        else if (index_type == IndexType::FILTER)
+        {
+            static_cast<FilterIndex *>(index_ptr)->saveIndex(scalar_storage, file_path);
+        }
+    }
+}
+
+void IndexFactory::loadIndex(const std::string folder_path, ScalarStorage &scalar_storage)
+{
+    for (const auto &[index_type, index_ptr] : m_index_map)
+    {
+        std::string file_path = std::format("{}.{}.index", folder_path, index_type);
+        if (index_type == IndexType::FLAT || index_type == IndexType::HNSW)
+        {
+            static_cast<FaissIndex *>(index_ptr)->loadIndex(file_path);
+        }
+        else if (index_type == IndexType::FILTER)
+        {
+            static_cast<FilterIndex *>(index_ptr)->loadIndex(scalar_storage, file_path);
+        }
+    }
 }
 
 IndexFactory::IndexType getIndexTypeFromJson(const rapidjson::Document &json_data)

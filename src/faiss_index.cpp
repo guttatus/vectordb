@@ -1,8 +1,10 @@
 #include "faiss_index.hh"
-#include "faiss/Index.h"
-#include "faiss/impl/IDSelector.h"
 #include "logger.hh"
+#include <faiss/Index.h>
 #include <faiss/IndexIDMap.h>
+#include <faiss/impl/IDSelector.h>
+#include <faiss/index_io.h>
+#include <fstream>
 #include <stdexcept>
 #include <vector>
 
@@ -64,21 +66,44 @@ std::pair<std::vector<i64>, std::vector<f32>> FaissIndex::search_vectors(const s
 
     m_index->search(query_num, query.data(), k, distances.data(), labels.data(), &search_params);
 
-    GlobalLogger->debug("Retrieved values:");
+    GlobalLogger->debug("<FaissIndex> Retrieved values:");
 
     for (size_t i = 0; i < labels.size(); ++i)
     {
         if (labels[i] != -1)
         {
-            GlobalLogger->debug("ID: {}, Distance: {}", labels[i], distances[i]);
+            GlobalLogger->debug("<FaissIndex> ID: {}, Distance: {}", labels[i], distances[i]);
         }
         else
         {
-            GlobalLogger->debug("No specific value found");
+            GlobalLogger->debug("<FaissIndex> No specific value found");
         }
     }
 
     return {labels, distances};
+}
+
+void FaissIndex::saveIndex(const std::string &file_path)
+{
+    faiss::write_index(m_index, file_path.c_str());
+}
+
+void FaissIndex::loadIndex(const std::string &file_path)
+{
+    std::ifstream file(file_path);
+    if (file.good()) // check if a file exists
+    {
+        file.close();
+        if (m_index != nullptr)
+        {
+            delete m_index;
+        }
+        m_index = faiss::read_index(file_path.c_str());
+    }
+    else
+    {
+        GlobalLogger->warn("<FaissIndex> File not found: {}, Skipping loading index.", file_path);
+    }
 }
 
 } // namespace vdb
